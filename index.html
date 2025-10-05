@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekod Ketidakhadiran Murid Digital</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .student-card-sending {
+            opacity: 0.6;
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+        }
+        /* Hide scrollbar for file name display but allow scrolling if needed */
+        .file-name-display {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .file-name-display::-webkit-scrollbar {
+            display: none; /* Chrome, Safari and Opera */
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+        <!-- Header -->
+        <header class="mb-6">
+            <div class="flex justify-center items-center relative">
+                <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 text-center">Rekod Ketidakhadiran Murid</h1>
+                <img src="https://skpuncakalam2.com/booking2/images/logoskpa2.png" alt="Logo Sekolah" class="absolute right-0 h-12 sm:h-16 object-contain">
+            </div>
+            <div class="text-center mt-2">
+                <p id="current-datetime" class="text-lg text-slate-600 font-mono tracking-wide"></p>
+                <div class="text-md text-slate-700 mt-2">
+                    <p><strong>Kelas :</strong> 2 Permata</p>
+                    <p><strong>Cikgu Kelas :</strong> Cikgu Sarah</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-green-100 border-l-4 border-green-500 rounded-lg p-4 shadow-sm">
+                <h3 class="text-sm font-medium text-green-800">Hadir</h3>
+                <p id="summary-hadir" class="text-2xl font-bold text-green-900">0</p>
+            </div>
+            <div class="bg-red-100 border-l-4 border-red-500 rounded-lg p-4 shadow-sm">
+                <h3 class="text-sm font-medium text-red-800">Tidak Hadir</h3>
+                <p id="summary-tidak-hadir" class="text-2xl font-bold text-red-900">0</p>
+            </div>
+            <div class="bg-yellow-100 border-l-4 border-yellow-500 rounded-lg p-4 shadow-sm">
+                <h3 class="text-sm font-medium text-yellow-800">Sakit</h3>
+                <p id="summary-sakit" class="text-2xl font-bold text-yellow-900">0</p>
+            </div>
+            <div class="bg-blue-100 border-l-4 border-blue-500 rounded-lg p-4 shadow-sm">
+                <h3 class="text-sm font-medium text-blue-800">Kebenaran</h3>
+                <p id="summary-kebenaran" class="text-2xl font-bold text-blue-900">0</p>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap justify-center gap-4 mb-8">
+            <button id="reset-button" class="bg-slate-300 text-slate-800 font-bold py-2 px-6 rounded-lg shadow-md hover:bg-slate-400 transition-colors">
+                Set Semula
+            </button>
+             <button id="set-url-button" class="bg-gray-500 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-gray-600 transition-colors">
+                Tetapan URL Sheet
+            </button>
+        </div>
+
+        <!-- Student List -->
+        <main>
+            <h2 class="text-2xl font-bold text-slate-900 mb-4 border-b pb-2">Senarai Murid</h2>
+            <div id="student-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- Student cards will be injected here by JavaScript -->
+            </div>
+        </main>
+        
+        <!-- Toast Notification -->
+        <div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-xl transition-transform transform translate-y-20 opacity-0 z-50">
+            Rekod berjaya disimpan!
+        </div>
+
+        <!-- Google Sheet URL Modal -->
+        <div id="google-sheet-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+            <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">URL Google Apps Script</h3>
+                    <div class="mt-2 px-7 py-3">
+                        <input type="url" id="google-sheet-url-input" class="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="https://script.google.com/macros/s/...">
+                        <p class="text-xs text-gray-500 mt-2">URL ini akan disimpan dalam pelayar anda. Sila rujuk fail arahan untuk mendapatkannya.</p>
+                    </div>
+                    <div class="items-center px-4 py-3 space-y-2 sm:space-y-0 sm:flex sm:gap-4">
+                        <button id="save-google-sheet-url" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300">
+                            Simpan URL
+                        </button>
+                         <button id="cancel-google-sheet-url" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                            Batal
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const students = [
+                // Lelaki
+                { id: 1, name: 'Ahmad Danial bin Hakim', gender: 'Lelaki' }, { id: 2, name: 'Muhammad Irfan bin Zainal', gender: 'Lelaki' },
+                { id: 3, name: 'Aiman Harith bin Nizam', gender: 'Lelaki' }, { id: 4, name: 'Danish Iqmal bin Rahman', gender: 'Lelaki' },
+                { id: 5, name: 'Haziq Amsyar bin Fikri', gender: 'Lelaki' }, { id: 6, name: 'Adam Faris bin Azlan', gender: 'Lelaki' },
+                { id: 7, name: 'Rayyan Aqil bin Amir', gender: 'Lelaki' }, { id: 8, name: 'Arif Zafran bin Saiful', gender: 'Lelaki' },
+                { id: 9, name: 'Luqman Hakim bin Razif', gender: 'Lelaki' }, { id: 10, name: 'Imran Firdaus bin Yazid', gender: 'Lelaki' },
+                { id: 11, name: 'Khairul Aiman bin Shahril', gender: 'Lelaki' }, { id: 12, name: 'Syamil Iqwan bin Rafiq', gender: 'Lelaki' },
+                { id: 13, name: 'Amirul Danish bin Roslan', gender: 'Lelaki' }, { id: 14, name: 'Harith Rayqal bin Zaid', gender: 'Lelaki' },
+                { id: 15, name: 'Farhan Naufal bin Latif', gender: 'Lelaki' }, { id: 16, name: 'Izzuddin Amsyar bin Kamal', gender: 'Lelaki' },
+                { id: 17, name: 'Naufal Haikal bin Razman', gender: 'Lelaki' }, { id: 18, name: 'Afiq Haziq bin Fauzan', gender: 'Lelaki' },
+                { id: 19, name: 'Hakimi Azwan bin Salleh', gender: 'Lelaki' }, { id: 20, name: 'Faiz Nazmi bin Azhar', gender: 'Lelaki' },
+                // Perempuan
+                { id: 21, name: 'Nur Aina Sofea binti Azim', gender: 'Perempuan' }, { id: 22, name: 'Puteri Balqis binti Amin', gender: 'Perempuan' },
+                { id: 23, name: 'Nur Alisha binti Faiz', gender: 'Perempuan' }, { id: 24, name: 'Aina Maisarah binti Razif', gender: 'Perempuan' },
+                { id: 25, name: 'Nur Aleesya binti Nizam', gender: 'Perempuan' }, { id: 26, name: 'Siti Hajar binti Zainal', gender: 'Perempuan' },
+                { id: 27, name: 'Nur Qalesya binti Hakim', gender: 'Perempuan' }, { id: 28, name: 'Damia Zahra binti Fikri', gender: 'Perempuan' },
+                { id: 29, name: 'Sofea Irdina binti Harith', gender: 'Perempuan' }, { id: 30, name: 'Nur Insyirah binti Luqman', gender: 'Perempuan' },
+                { id: 31, name: 'Aisyah Humaira binti Rafiq', gender: 'Perempuan' }, { id: 32, name: 'Amirah Batrisyia binti Kamal', gender: 'Perempuan' },
+                { id: 33, name: 'Alia Nabila binti Roslan', gender: 'Perempuan' }, { id: 34, name: 'Maisarah Imani binti Yazid', gender: 'Perempuan' },
+                { id: 35, name: 'Natasya Qistina binti Amir', gender: 'Perempuan' }, { id: 36, name: 'Husna Adelia binti Saiful', gender: 'Perempuan' },
+                { id: 37, name: 'Auni Batrisya binti Latif', gender: 'Perempuan' }, { id: 38, name: 'Arissa Damia binti Azlan', gender: 'Perempuan' },
+                { id: 39, name: 'Sofea Najwa binti Rahman', gender: 'Perempuan' }, { id: 40, name: 'Zara Qaisara binti Razman', gender: 'Perempuan' }
+            ];
+
+            const studentListContainer = document.getElementById('student-list');
+            const datetimeElement = document.getElementById('current-datetime');
+            const summaryHadir = document.getElementById('summary-hadir');
+            const summaryTidakHadir = document.getElementById('summary-tidak-hadir');
+            const summarySakit = document.getElementById('summary-sakit');
+            const summaryKebenaran = document.getElementById('summary-kebenaran');
+            const resetButton = document.getElementById('reset-button');
+            const setUrlButton = document.getElementById('set-url-button');
+            const toastElement = document.getElementById('toast');
+            const modal = document.getElementById('google-sheet-modal');
+            const googleSheetUrlInput = document.getElementById('google-sheet-url-input');
+            const saveGoogleSheetUrlButton = document.getElementById('save-google-sheet-url');
+            const cancelGoogleSheetUrlButton = document.getElementById('cancel-google-sheet-url');
+
+            const today = new Date();
+            const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            
+            let fullData = {
+                attendance: {}
+            };
+
+            function updateDateTime() {
+                const now = new Date();
+                const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+                const dateString = now.toLocaleDateString('ms-MY', dateOptions);
+                const timeString = now.toLocaleTimeString('ms-MY', timeOptions);
+                datetimeElement.textContent = `${dateString}, ${timeString}`;
+            }
+
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+
+            function renderStudents() {
+                studentListContainer.innerHTML = '';
+                students.forEach(student => {
+                    const genderIcon = student.gender === 'Lelaki' ? '👦' : '👧';
+                    const card = document.createElement('div');
+                    card.id = `student-card-${student.id}`;
+                    card.className = 'bg-white p-3 rounded-xl shadow-md flex items-center justify-between transition-shadow hover:shadow-lg flex-wrap sm:flex-nowrap';
+                    card.innerHTML = `
+                        <div class="flex items-center mb-2 sm:mb-0 w-full sm:w-auto flex-grow">
+                            <span class="text-xl mr-3">${genderIcon}</span>
+                            <div>
+                                <p class="font-bold text-slate-900">${student.id}. ${student.name}</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end gap-2 w-full sm:w-auto sm:max-w-xs mt-2 sm:mt-0">
+                            <div class="flex items-center gap-2 w-full">
+                                <button class="hadir-btn font-medium py-2 px-4 rounded-lg transition border" data-student-id="${student.id}">Hadir</button>
+                                <div class="relative w-full">
+                                    <select class="status-select appearance-none w-full bg-slate-200 border border-slate-300 text-slate-700 font-medium py-2 px-3 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500 transition" data-student-id="${student.id}">
+                                        <option value="">Sebab Tidak Hadir...</option>
+                                        <option>Cuti Sakit</option>
+                                        <option>Tidak Sihat</option>
+                                        <option>Balik Kampung</option>
+                                        <option>Masalah Pengangkutan</option>
+                                        <option>Ziarah Keluarga Sakit</option>
+                                        <option>Ibu Bapa Berkursus</option>
+                                        <option>Lain-lain</option>
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700">
+                                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="notes-container hidden w-full flex-col gap-2 mt-1">
+                                <div class="file-upload-wrapper hidden w-full flex-col items-start gap-1">
+                                    <label class="text-xs font-medium text-slate-600">Lampiran (PDF/Gambar):</label>
+                                    <div class="flex items-center gap-2 w-full">
+                                        <input type="file" class="file-input hidden" data-student-id="${student.id}" accept=".pdf,.jpg,.jpeg,.png">
+                                        <button type="button" class="upload-btn bg-indigo-100 text-indigo-700 text-xs font-bold py-1 px-3 rounded-md hover:bg-indigo-200" data-student-id="${student.id}">Pilih Fail</button>
+                                        <span class="file-name-display text-xs text-slate-500 truncate overflow-x-auto max-w-full">Tiada fail dipilih.</span>
+                                    </div>
+                                </div>
+                                <div class="lain-lain-wrapper hidden w-full flex items-center gap-1">
+                                    <input type="text" class="lain-lain-note w-full p-2 border border-slate-300 rounded-lg text-sm" placeholder="Sila nyatakan sebab..." data-student-id="${student.id}">
+                                </div>
+                                <div class="updated-by-wrapper hidden w-full flex items-center gap-1">
+                                    <input type="text" class="updated-by-note w-full p-2 border border-slate-300 rounded-lg text-sm" placeholder="Dikemaskini oleh..." data-student-id="${student.id}">
+                                </div>
+                                <button class="save-remark-btn bg-gray-200 text-gray-700 text-xs font-bold py-1 px-3 rounded-md hover:bg-gray-300 self-end" data-student-id="${student.id}">OK</button>
+                            </div>
+                        </div>
+                    `;
+                    studentListContainer.appendChild(card);
+                });
+            }
+            
+            function updateSummary() {
+                const counts = { 'Hadir': 0, 'Tidak Hadir': 0, 'Sakit': 0, 'Kebenaran': 0 };
+                const statusMap = {
+                    'Hadir': 'Hadir', 'Cuti Sakit': 'Sakit', 'Tidak Sihat': 'Sakit',
+                    'Balik Kampung': 'Kebenaran', 'Ziarah Keluarga Sakit': 'Kebenaran', 'Ibu Bapa Berkursus': 'Kebenaran',
+                    'Masalah Pengangkutan': 'Tidak Hadir', 'Lain-lain': 'Tidak Hadir'
+                };
+                Object.values(fullData.attendance).forEach(data => {
+                    const summaryCategory = statusMap[data.status];
+                    if(summaryCategory) counts[summaryCategory]++;
+                });
+                summaryHadir.textContent = counts['Hadir'];
+                summaryTidakHadir.textContent = counts['Tidak Hadir'];
+                summarySakit.textContent = counts['Sakit'];
+                summaryKebenaran.textContent = counts['Kebenaran'];
+            }
+
+            function updateSelectStyle(selectElement, status) {
+                selectElement.className = 'status-select appearance-none w-full font-medium py-2 px-3 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500 transition'; // Reset
+                switch(status) {
+                    case 'Cuti Sakit': case 'Tidak Sihat': selectElement.classList.add('bg-yellow-200', 'text-yellow-800', 'border-yellow-400'); break;
+                    case 'Balik Kampung': case 'Ziarah Keluarga Sakit': case 'Ibu Bapa Berkursus': selectElement.classList.add('bg-blue-200', 'text-blue-800', 'border-blue-400'); break;
+                    case 'Masalah Pengangkutan': case 'Lain-lain': selectElement.classList.add('bg-red-200', 'text-red-800', 'border-red-400'); break;
+                    default: selectElement.classList.add('bg-slate-200', 'text-slate-700', 'border-slate-300');
+                }
+            }
+
+            function updateStudentUI(studentId, data) {
+                const card = document.getElementById(`student-card-${studentId}`);
+                if (!card) return;
+                const hadirBtn = card.querySelector(`.hadir-btn`);
+                const selectEl = card.querySelector(`.status-select`);
+                const notesContainer = card.querySelector('.notes-container');
+                const lainLainWrapper = card.querySelector('.lain-lain-wrapper');
+                const updatedByWrapper = card.querySelector('.updated-by-wrapper');
+                const fileUploadWrapper = card.querySelector('.file-upload-wrapper');
+                const fileNameDisplay = card.querySelector('.file-name-display');
+                const lainLainNote = card.querySelector('.lain-lain-note');
+                const updatedByNote = card.querySelector('.updated-by-note');
+
+                if (data.status === 'Hadir') {
+                    hadirBtn.textContent = 'Hadir';
+                    hadirBtn.className = 'hadir-btn font-medium py-2 px-4 rounded-lg transition border bg-green-500 text-white border-green-600';
+                    selectEl.value = "";
+                    notesContainer.classList.add('hidden');
+                } else {
+                    hadirBtn.textContent = 'Tidak Hadir';
+                    hadirBtn.className = 'hadir-btn font-medium py-2 px-4 rounded-lg transition border bg-red-500 text-white border-red-600';
+                    selectEl.value = data.status;
+                    notesContainer.classList.remove('hidden');
+                    updatedByWrapper.classList.remove('hidden');
+                    updatedByNote.value = data.updatedBy || '';
+                }
+                
+                lainLainWrapper.classList.toggle('hidden', data.status !== 'Lain-lain');
+                fileUploadWrapper.classList.toggle('hidden', data.status !== 'Cuti Sakit');
+                
+                if(data.status === 'Lain-lain') lainLainNote.value = data.note || '';
+                if(data.status === 'Cuti Sakit') fileNameDisplay.textContent = data.documentName || 'Tiada fail dipilih.';
+                
+                updateSelectStyle(selectEl, data.status);
+            }
+            
+            function showToast(message, isError = false) {
+                toastElement.textContent = message;
+                toastElement.classList.remove('bg-green-500', 'bg-red-500', 'opacity-0', 'translate-y-20');
+                toastElement.classList.add(isError ? 'bg-red-500' : 'bg-green-500');
+                setTimeout(() => {
+                    toastElement.classList.add('opacity-0', 'translate-y-20');
+                }, 3000);
+            }
+            
+            function saveState() {
+                localStorage.setItem(dateKey, JSON.stringify(fullData));
+            }
+
+            function sendSingleRecordToSheet(studentId) {
+                const savedUrl = localStorage.getItem('googleSheetUrl');
+                if (!savedUrl) {
+                    modal.classList.remove('hidden');
+                    return;
+                }
+
+                const card = document.getElementById(`student-card-${studentId}`);
+                card.classList.add('student-card-sending');
+
+                const studentNameMap = students.reduce((acc, student) => { acc[student.id] = student.name; return acc; }, {});
+
+                // Create a clean record without the large file data for the sheet
+                const recordForSheet = { ...fullData.attendance[studentId] };
+                delete recordForSheet.documentData; // Do not send base64 data
+
+                const payload = {
+                    date: dateKey,
+                    metadata: {
+                        subject: "",
+                        updatedBy: ""
+                    },
+                    attendance: [{
+                        id: studentId,
+                        name: studentNameMap[studentId] || 'Nama Tidak Dijumpai',
+                        ...recordForSheet
+                    }]
+                };
+
+                fetch(savedUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    cache: 'no-cache',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(() => {
+                    showToast(`Rekod ${studentNameMap[studentId]} dikemaskini ke Sheet.`);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Gagal hantar ke Sheet. Sila semak URL & konsol.', true);
+                })
+                .finally(() => {
+                    card.classList.remove('student-card-sending');
+                });
+            }
+
+            function handleStudentUpdate(studentId, sendToSheet = false) {
+                updateStudentUI(studentId, fullData.attendance[studentId]);
+                updateSummary();
+                saveState();
+                if (sendToSheet) {
+                    sendSingleRecordToSheet(studentId);
+                }
+            }
+
+            studentListContainer.addEventListener('click', (e) => {
+                const studentId = e.target.getAttribute('data-student-id');
+                if (!studentId) return;
+
+                if (e.target.matches('.hadir-btn')) {
+                    const newData = { status: 'Hadir', note: '', updatedBy: '', documentName: '', documentData: '' };
+                    fullData.attendance[studentId] = newData;
+                    handleStudentUpdate(studentId, false);
+                } else if (e.target.matches('.upload-btn')) {
+                    e.target.closest('.file-upload-wrapper').querySelector('.file-input').click();
+                } else if (e.target.matches('.save-remark-btn')) {
+                    const card = e.target.closest('.bg-white');
+                    if (fullData.attendance[studentId]) {
+                        if (fullData.attendance[studentId].status === 'Lain-lain') {
+                            fullData.attendance[studentId].note = card.querySelector('.lain-lain-note').value;
+                        }
+                        fullData.attendance[studentId].updatedBy = card.querySelector('.updated-by-note').value;
+                        
+                        e.target.textContent = 'Disimpan ✓';
+                        e.target.classList.replace('bg-gray-200', 'bg-green-500');
+                        e.target.classList.add('text-white');
+                        setTimeout(() => {
+                            e.target.textContent = 'OK';
+                            e.target.classList.replace('bg-green-500', 'bg-gray-200');
+                            e.target.classList.remove('text-white');
+                        }, 1500);
+
+                        handleStudentUpdate(studentId, true);
+                    }
+                }
+            });
+
+            studentListContainer.addEventListener('change', (e) => {
+                const studentId = e.target.getAttribute('data-student-id');
+                if (!studentId) return;
+
+                if (e.target.matches('.status-select')) {
+                    const status = e.target.value;
+                    const currentData = fullData.attendance[studentId] || {};
+                    const newData = status ? 
+                        { ...currentData, status: status, note: status === 'Lain-lain' ? currentData.note : '' } : 
+                        { status: 'Hadir', note: '', updatedBy: '', documentName: '', documentData: '' };
+                    
+                    if(status !== 'Cuti Sakit'){
+                        newData.documentData = '';
+                        newData.documentName = '';
+                    }
+                     if(status !== 'Lain-lain'){
+                        newData.note = '';
+                    }
+
+                    fullData.attendance[studentId] = newData;
+                    handleStudentUpdate(studentId, false);
+                } else if (e.target.matches('.file-input')) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            if (!fullData.attendance[studentId]) fullData.attendance[studentId] = {};
+                            fullData.attendance[studentId].documentData = event.target.result;
+                            fullData.attendance[studentId].documentName = file.name;
+                            const card = document.getElementById(`student-card-${studentId}`);
+                            card.querySelector('.file-name-display').textContent = file.name;
+                            saveState();
+                            showToast(`Fail ${file.name} telah disimpan.`);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+            });
+            
+            resetButton.addEventListener('click', () => {
+                if (confirm('Anda pasti mahu set semula semua rekod untuk hari ini?')) {
+                    localStorage.removeItem(dateKey);
+                    fullData = { attendance: {} };
+                    students.forEach(student => {
+                        const resetData = { status: 'Hadir', note: '', updatedBy: '', documentName: '', documentData: '' };
+                        fullData.attendance[student.id] = resetData;
+                        updateStudentUI(student.id, resetData);
+                    });
+                    updateSummary();
+                    showToast('Rekod telah diset semula.');
+                }
+            });
+
+            setUrlButton.addEventListener('click', () => {
+                googleSheetUrlInput.value = localStorage.getItem('googleSheetUrl') || '';
+                modal.classList.remove('hidden');
+            });
+            
+            saveGoogleSheetUrlButton.addEventListener('click', () => {
+                const url = googleSheetUrlInput.value.trim();
+                if (url && url.startsWith("https://script.google.com/macros/s/")) {
+                    localStorage.setItem('googleSheetUrl', url);
+                    modal.classList.add('hidden');
+                    showToast('URL Google Sheet berjaya disimpan.');
+                } else {
+                    alert('Sila masukkan URL Google Apps Script yang sah.');
+                }
+            });
+
+            cancelGoogleSheetUrlButton.addEventListener('click', () => modal.classList.add('hidden'));
+
+            function loadAttendance() {
+                const savedData = localStorage.getItem(dateKey);
+                if(savedData) {
+                    const parsedData = JSON.parse(savedData);
+                     if (parsedData && parsedData.attendance) {
+                        fullData = parsedData;
+                    }
+                }
+                students.forEach(student => {
+                    const studentData = fullData.attendance[student.id] || { status: 'Hadir', note: '', updatedBy: '' };
+                    fullData.attendance[student.id] = studentData;
+                    updateStudentUI(student.id, studentData);
+                });
+                updateSummary();
+            }
+
+            renderStudents();
+            loadAttendance();
+        });
+    </script>
+</body>
+</html>
+
